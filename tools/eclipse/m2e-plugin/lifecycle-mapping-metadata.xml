@@ -3,7 +3,7 @@
    <pluginExecutions>
      <pluginExecution>
        <pluginExecutionFilter>
-         <groupId>org.teavm</groupId>
+         <groupId>com.fermyon</groupId>
          <artifactId>teavm-maven-plugin</artifactId>
          <versionRange>[0.0.0,)</versionRange>
           <goals>

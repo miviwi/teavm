@@ -17,9 +17,9 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.teavm</groupId>
+    <groupId>com.fermyon</groupId>
     <artifactId>teavm-samples</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.1.0</version>
   </parent>
   <artifactId>teavm-samples-async</artifactId>
 
@@ -30,7 +30,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.teavm</groupId>
+      <groupId>com.fermyon</groupId>
       <artifactId>teavm-classlib</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
@@ -51,7 +51,7 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.teavm</groupId>
+        <groupId>com.fermyon</groupId>
         <artifactId>teavm-maven-plugin</artifactId>
         <version>${project.version}</version>
         <executions>

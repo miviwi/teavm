@@ -16,7 +16,7 @@
   <dependencies>
     <!-- Emulator of Java class library for TeaVM -->
     <dependency>
-      <groupId>org.teavm</groupId>
+      <groupId>com.fermyon</groupId>
       <artifactId>teavm-classlib</artifactId>
       <version>\${teavm.version}</version>
       <scope>provided</scope>
@@ -24,7 +24,7 @@
 
     <!-- JavaScriptObjects (JSO) - a JavaScript binding for TeaVM -->
     <dependency>
-      <groupId>org.teavm</groupId>
+      <groupId>com.fermyon</groupId>
       <artifactId>teavm-jso-apis</artifactId>
       <version>\${teavm.version}</version>
       <scope>provided</scope>
@@ -66,7 +66,7 @@
 
       <!-- Configure TeaVM -->
       <plugin>
-        <groupId>org.teavm</groupId>
+        <groupId>com.fermyon</groupId>
         <artifactId>teavm-maven-plugin</artifactId>
         <version>\${teavm.version}</version>
         <executions>

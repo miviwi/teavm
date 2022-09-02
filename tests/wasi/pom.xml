@@ -9,14 +9,14 @@
 
   <properties>
     <java.version>1.8</java.version>
-    <teavm.version>0.7.0-SNAPSHOT</teavm.version>
+    <teavm.version>0.1.0</teavm.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <dependencies>
     <!-- Emulator of Java class library for TeaVM -->
     <dependency>
-      <groupId>org.teavm</groupId>
+      <groupId>com.fermyon</groupId>
       <artifactId>teavm-classlib</artifactId>
       <version>${teavm.version}</version>
       <scope>provided</scope>
@@ -37,7 +37,7 @@
 
       <!-- Configure TeaVM -->
       <plugin>
-        <groupId>org.teavm</groupId>
+        <groupId>com.fermyon</groupId>
         <artifactId>teavm-maven-plugin</artifactId>
         <version>${teavm.version}</version>
         <executions>
