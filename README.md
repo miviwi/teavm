@@ -1,7 +1,16 @@
+TeaVM-WASI
+==========
+
+This repo contains a friendly fork of [TeaVM](https://github.com/konsoletyper/teavm), modified to support [WASI](https://wasi.dev/) and the WebAssembly [Component Model](https://github.com/WebAssembly/component-model) proposal.  We hope to eventually merge this work upstream if there is interest from the TeaVM maintainers.  In the meantime, we will be publishing the relevant packages to the Maven Central Repository under the `groupId` "com.fermyon".
+
+See [tests/wasi](tests/wasi) for an example.
+
+The remainder of this document consists of the original TeaVM README.md.
+
 TeaVM
 =====
- 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.teavm/teavm-maven-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.teavm/teavm-maven-plugin) 
+
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.teavm/teavm-maven-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.teavm/teavm-maven-plugin)
 [![Download](https://teavm.org/maven/latestBadge.svg)](https://teavm.org/maven/_latest)
 [![Gitter chat](https://img.shields.io/badge/gitter-join%20chat-green.svg)](https://gitter.im/teavm/Lobby)
 [![Code Quality: Java](https://img.shields.io/lgtm/grade/java/g/konsoletyper/teavm.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/konsoletyper/teavm/context:java)
@@ -44,14 +53,14 @@ You may want to access new features and don't want to wait until stable release 
   </pluginRepositories>
 ```
 
-IDEA plugin is also available in preview builds. You need to add corresponding repository manually to IDEA. Open *Settings* -> *Plugins* -> *Browse repositories...* -> *Manage repositories...*, click *Add* button and enter `https://teavm.org/idea/dev/teavmRepository.xml`. Then get back to *Browse repositories* and pick TeaVM plugin from list. 
+IDEA plugin is also available in preview builds. You need to add corresponding repository manually to IDEA. Open *Settings* -> *Plugins* -> *Browse repositories...* -> *Manage repositories...*, click *Add* button and enter `https://teavm.org/idea/dev/teavmRepository.xml`. Then get back to *Browse repositories* and pick TeaVM plugin from list.
 
 
 Embedding TeaVM
 ---------------
 
 If you are not satisfied with Maven, you can embed TeaVM in your program or even create your own plugin for any build tool, like Ant or Gradle. The starting point for you may be `org.teavm.tooling.TeaVMTool` class from `teavm-tooling` artifact. You may want to go deeper and use `org.teavm.vm.TeaVM` from `teavm-core` artifact, learn how `TeaVMTool` initializes it. To learn how to use `TeaVMTool` class itself, find its usages across project source code. You most likely encounter Maven and IDEA plugins.
-  
+
 Please, notice that these APIs for embedding are still unstable and may change between versions.
 
 
@@ -63,7 +72,7 @@ WebAssembly support is in experimental status. It may lack major features availa
 
 License
 -------
- 
+
 TeaVM is distributed under [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 TeaVM does not rely on OpenJDK or code or other (L)GPL code.
 TeaVM has its own reimplementation of Java class library, which is either implemented from scratch or based on non-(L)GPL projects:
