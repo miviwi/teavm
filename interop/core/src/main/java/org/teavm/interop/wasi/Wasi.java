@@ -15,8 +15,8 @@
  */
 package org.teavm.interop.wasi;
 
-import static org.teavm.interop.wasi.Memory.free;
-import static org.teavm.interop.wasi.Memory.malloc;
+import static org.teavm.interop.Memory.free;
+import static org.teavm.interop.Memory.malloc;
 import org.teavm.interop.Address;
 import org.teavm.interop.Import;
 import org.teavm.interop.Unmanaged;
@@ -130,20 +130,6 @@ public final class Wasi {
 
     @Import(name = "random_get", module = "wasi_snapshot_preview1")
     public static native short randomGet(Address buffer, int bufferLength);
-
-    // TODO: make this an Address intrinsic that does a bulk memory operation
-    public static void getBytes(Address address, byte[] bytes, int offset, int length) {
-        for (int i = 0; i < length; ++i) {
-            bytes[offset + i] = address.add(i).getByte();
-        }
-    }
-
-    // TODO: make this an Address intrinsic that does a bulk memory operation
-    public static void putBytes(Address address, byte[] bytes, int offset, int length) {
-        for (int i = 0; i < length; ++i) {
-            address.add(i).putByte(bytes[offset + i]);
-        }
-    }
 
     public static String errnoMessage(String sysCall, short errno) {
         // TODO: Provide a friendly message for each case.

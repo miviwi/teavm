@@ -45,6 +45,7 @@ import java.util.List;
 import org.teavm.classlib.fs.VirtualFile;
 import org.teavm.classlib.fs.VirtualFileAccessor;
 import org.teavm.interop.Address;
+import org.teavm.interop.Memory;
 import org.teavm.interop.wasi.Wasi;
 import org.teavm.interop.wasi.Wasi.ErrnoException;
 
@@ -213,7 +214,7 @@ public class WasiVirtualFile implements VirtualFile {
                 } else {
                     cookie = dirent.getLong();
                     byte[] bytes = new byte[length];
-                    Wasi.getBytes(dirent.add(direntSize), bytes, 0, length);
+                    Memory.getBytes(dirent.add(direntSize), bytes, 0, length);
                     // TODO: This is probably not guaranteed to be UTF-8
                     String name = new String(bytes, StandardCharsets.UTF_8);
                     if (!name.startsWith(".")) {

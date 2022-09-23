@@ -13,10 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package org.teavm.interop.wasi;
-
-import org.teavm.interop.Address;
-import org.teavm.interop.Export;
+package org.teavm.interop;
 
 // This class implements a very naive allocator, useful for allocating buffers
 // which are outside the Java heap and therefore guaranteed not to move.
@@ -147,6 +144,90 @@ public final class Memory {
                 }
                 mapAddress.putLong(0);
             }
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void getBytes(Address address, byte[] bytes, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            bytes[offset + i] = address.add(i).getByte();
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void putBytes(Address address, byte[] bytes, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            address.add(i).putByte(bytes[offset + i]);
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void getShorts(Address address, short[] shorts, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            shorts[offset + i] = address.add(i).getShort();
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void putShorts(Address address, short[] shorts, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            address.add(i).putShort(shorts[offset + i]);
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void getInts(Address address, int[] ints, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            ints[offset + i] = address.add(i).getInt();
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void putInts(Address address, int[] ints, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            address.add(i).putInt(ints[offset + i]);
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void getLongs(Address address, long[] longs, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            longs[offset + i] = address.add(i).getLong();
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void putLongs(Address address, long[] longs, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            address.add(i).putLong(longs[offset + i]);
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void getFloats(Address address, float[] floats, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            floats[offset + i] = address.add(i).getFloat();
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void putFloats(Address address, float[] floats, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            address.add(i).putFloat(floats[offset + i]);
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void getDoubles(Address address, double[] doubles, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            doubles[offset + i] = address.add(i).getDouble();
+        }
+    }
+
+    // TODO: make this an Address intrinsic that does a bulk memory operation
+    public static void putDoubles(Address address, double[] doubles, int offset, int length) {
+        for (int i = 0; i < length; ++i) {
+            address.add(i).putDouble(doubles[offset + i]);
         }
     }
 }
