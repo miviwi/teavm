@@ -35,7 +35,7 @@ public final class Memory {
         return (n + d - 1) / d;
     }
 
-    @Export(name = "canonical_abi_realloc")
+    @Export(name = "cabi_realloc")
     public static Address realloc(Address oldAddress, int oldSize, int align, int newSize) {
         if (oldSize < 0 || newSize < 0 || !(align == 1 || align == 2 || align == 4 || align == 8)) {
             throw new IllegalArgumentException();
@@ -109,7 +109,6 @@ public final class Memory {
         return realloc(Address.fromInt(0), 0, align, size);
     }
 
-    @Export(name = "canonical_abi_free")
     public static void free(Address address, int size, int align) {
         if (size < 0 || !(align == 1 || align == 2 || align == 4 || align == 8)) {
             throw new IllegalArgumentException();

@@ -15,8 +15,8 @@
  */
 package org.teavm.classlib.impl.console;
 
-import static org.teavm.interop.wasi.Memory.free;
-import static org.teavm.interop.wasi.Memory.malloc;
+import static org.teavm.interop.Memory.free;
+import static org.teavm.interop.Memory.malloc;
 import static org.teavm.interop.wasi.Wasi.printBuffer;
 import org.teavm.backend.c.intrinsic.RuntimeInclude;
 import org.teavm.classlib.PlatformDetector;
