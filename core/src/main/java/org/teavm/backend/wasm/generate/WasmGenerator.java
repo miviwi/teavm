@@ -26,11 +26,13 @@ import org.teavm.backend.wasm.model.WasmLocal;
 import org.teavm.backend.wasm.model.WasmType;
 import org.teavm.backend.wasm.model.expression.WasmBlock;
 import org.teavm.interop.Export;
+import org.teavm.interop.Import;
 import org.teavm.model.AnnotationReader;
 import org.teavm.model.ClassHolder;
 import org.teavm.model.ClassHolderSource;
 import org.teavm.model.ElementModifier;
 import org.teavm.model.MethodHolder;
+import org.teavm.model.MethodReader;
 import org.teavm.model.MethodReference;
 import org.teavm.model.ValueType;
 
@@ -59,6 +61,18 @@ public class WasmGenerator {
         ClassHolder cls = classSource.get(methodReference.getClassName());
         MethodHolder method = cls.getMethod(methodReference.getDescriptor());
         WasmFunction function = new WasmFunction(names.forMethod(method.getReference()));
+
+        MethodReader reader = classSource.resolve(methodReference);
+
+        AnnotationReader exportAnnot = reader.getAnnotations().get(Export.class.getName());
+        if (exportAnnot != null) {
+            function.setExportName(exportAnnot.getValue("name").getString());
+        }
+
+        AnnotationReader importAnnot = reader.getAnnotations().get(Import.class.getName());
+        if (importAnnot != null) {
+            function.setImportName(importAnnot.getValue("name").getString());
+        }
 
         if (!method.hasModifier(ElementModifier.STATIC)) {
             function.getParameters().add(WasmType.INT32);
