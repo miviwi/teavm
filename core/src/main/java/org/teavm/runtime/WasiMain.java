@@ -36,27 +36,31 @@ public final class WasiMain {
             int argvSize = sizes.getInt();
             int argvBufSize = sizes.add(4).getInt();
 
-            byte[] argvBuffer = new byte[(argvSize * 4) + 4];
-            Address argv = Address.align(Address.ofData(argvBuffer), 4);
-            byte[] argvBuf = new byte[argvBufSize];
-            errno = Wasi.argsGet(argv, Address.ofData(argvBuf));
+            if (argvSize > 0) {
+                byte[] argvBuffer = new byte[(argvSize * 4) + 4];
+                Address argv = Address.align(Address.ofData(argvBuffer), 4);
+                byte[] argvBuf = new byte[argvBufSize];
+                errno = Wasi.argsGet(argv, Address.ofData(argvBuf));
 
-            if (errno == ERRNO_SUCCESS) {
-                String[] args = new String[argvSize - 1];
-                for (int i = 1; i < argvSize; ++i) {
-                    int offset = argv.add(i * 4).getInt() - Address.ofData(argvBuf).toInt();
-                    int length = (i == argvSize - 1
-                                  ? argvBufSize
-                                  : (argv.add((i + 1) * 4).getInt() - Address.ofData(argvBuf).toInt()))
-                        - 1 - offset;
+                if (errno == ERRNO_SUCCESS) {
+                    String[] args = new String[argvSize - 1];
+                    for (int i = 1; i < argvSize; ++i) {
+                        int offset = argv.add(i * 4).getInt() - Address.ofData(argvBuf).toInt();
+                        int length = (i == argvSize - 1
+                                      ? argvBufSize
+                                      : (argv.add((i + 1) * 4).getInt() - Address.ofData(argvBuf).toInt()))
+                            - 1 - offset;
 
-                    // TODO: this is probably not guaranteed to be UTF-8:
-                    args[i - 1] = new String(argvBuf, offset, length, StandardCharsets.UTF_8);
+                        // TODO: this is probably not guaranteed to be UTF-8:
+                        args[i - 1] = new String(argvBuf, offset, length, StandardCharsets.UTF_8);
+                    }
+
+                    Fiber.startMain(args);
+                } else {
+                    throw new ErrnoException("args_get", errno);
                 }
-
-                Fiber.startMain(args);
             } else {
-                throw new ErrnoException("args_get", errno);
+                Fiber.startMain(new String[0]);
             }
         } else {
             throw new ErrnoException("args_sizes_get", errno);
