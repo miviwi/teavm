@@ -163,70 +163,70 @@ public final class Memory {
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void getShorts(Address address, short[] shorts, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            shorts[offset + i] = address.add(i).getShort();
+            shorts[offset + i] = address.add(i * 2).getShort();
         }
     }
 
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void putShorts(Address address, short[] shorts, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            address.add(i).putShort(shorts[offset + i]);
+            address.add(i * 2).putShort(shorts[offset + i]);
         }
     }
 
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void getInts(Address address, int[] ints, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            ints[offset + i] = address.add(i).getInt();
+            ints[offset + i] = address.add(i * 4).getInt();
         }
     }
 
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void putInts(Address address, int[] ints, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            address.add(i).putInt(ints[offset + i]);
+            address.add(i * 4).putInt(ints[offset + i]);
         }
     }
 
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void getLongs(Address address, long[] longs, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            longs[offset + i] = address.add(i).getLong();
+            longs[offset + i] = address.add(i * 8).getLong();
         }
     }
 
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void putLongs(Address address, long[] longs, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            address.add(i).putLong(longs[offset + i]);
+            address.add(i * 8).putLong(longs[offset + i]);
         }
     }
 
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void getFloats(Address address, float[] floats, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            floats[offset + i] = address.add(i).getFloat();
+            floats[offset + i] = address.add(i * 4).getFloat();
         }
     }
 
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void putFloats(Address address, float[] floats, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            address.add(i).putFloat(floats[offset + i]);
+            address.add(i * 4).putFloat(floats[offset + i]);
         }
     }
 
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void getDoubles(Address address, double[] doubles, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            doubles[offset + i] = address.add(i).getDouble();
+            doubles[offset + i] = address.add(i * 8).getDouble();
         }
     }
 
     // TODO: make this an Address intrinsic that does a bulk memory operation
     public static void putDoubles(Address address, double[] doubles, int offset, int length) {
         for (int i = 0; i < length; ++i) {
-            address.add(i).putDouble(doubles[offset + i]);
+            address.add(i * 8).putDouble(doubles[offset + i]);
         }
     }
 }
