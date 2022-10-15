@@ -35,6 +35,18 @@ public final class Memory {
         return (n + d - 1) / d;
     }
 
+    // Obsolete component model function, provided for backwards compatibility:
+    @Export(name = "canonical_abi_realloc")
+    public static Address oldRealloc(Address oldAddress, int oldSize, int align, int newSize) {
+        return realloc(oldAddress, oldSize, align, newSize);
+    }
+
+    // Obsolete component model function, provided for backwards compatibility:
+    @Export(name = "canonical_abi_free")
+    public static void oldFree(Address address, int size, int align) {
+        free(address, size, align);
+    }
+
     @Export(name = "cabi_realloc")
     public static Address realloc(Address oldAddress, int oldSize, int align, int newSize) {
         if (oldSize < 0 || newSize < 0 || !(align == 1 || align == 2 || align == 4 || align == 8)) {
