@@ -2,14 +2,17 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>foo</groupId>
-  <artifactId>foo</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <parent>
+    <groupId>com.fermyon</groupId>
+    <artifactId>teavm-tests</artifactId>
+    <version>0.2.2-SNAPSHOT</version>
+  </parent>
+  <artifactId>teavm-tests-wasi</artifactId>
+
   <packaging>war</packaging>
 
   <properties>
     <java.version>1.8</java.version>
-    <teavm.version>0.2.2-SNAPSHOT</teavm.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -18,7 +21,7 @@
     <dependency>
       <groupId>com.fermyon</groupId>
       <artifactId>teavm-classlib</artifactId>
-      <version>${teavm.version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -39,7 +42,7 @@
       <plugin>
         <groupId>com.fermyon</groupId>
         <artifactId>teavm-maven-plugin</artifactId>
-        <version>${teavm.version}</version>
+        <version>${project.version}</version>
         <executions>
           <execution>
             <id>web-client</id>
