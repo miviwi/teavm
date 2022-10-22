@@ -148,7 +148,7 @@ public final class Memory {
         } else {
             int needed = ceilingDivide(size, 512);
             for (int i = 0; i < needed; ++i) {
-                Address mapAddress = Address.fromInt((i + offset) / 64);
+                Address mapAddress = Address.fromInt((offset / 8) + (i * 8));
                 long entry = mapAddress.getLong();
                 if (entry != 0xFFFFFFFFFFFFFFFFL) {
                     throw new IllegalArgumentException();
