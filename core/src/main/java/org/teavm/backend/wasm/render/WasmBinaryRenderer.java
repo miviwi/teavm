@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.teavm.backend.wasm.model.CustomSectionHolder;
 import org.teavm.backend.wasm.model.WasmFunction;
 import org.teavm.backend.wasm.model.WasmLocal;
 import org.teavm.backend.wasm.model.WasmMemorySegment;
@@ -77,6 +78,9 @@ public class WasmBinaryRenderer {
         renderData(module);
         if (!obfuscated) {
             renderNames(module);
+        }
+        for (CustomSectionHolder section : module.getCustomSections()) {
+            writeSection(SECTION_UNKNOWN, section.name, section.body);
         }
     }
 

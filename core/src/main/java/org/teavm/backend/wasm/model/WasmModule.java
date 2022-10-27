@@ -29,6 +29,7 @@ public class WasmModule {
     private Map<String, WasmFunction> readonlyFunctions = Collections.unmodifiableMap(functions);
     private List<WasmFunction> functionTable = new ArrayList<>();
     private WasmFunction startFunction;
+    private List<CustomSectionHolder> customSections = new ArrayList<>();
 
     public void add(WasmFunction function) {
         if (functions.containsKey(function.getName())) {
@@ -83,5 +84,13 @@ public class WasmModule {
 
     public void setStartFunction(WasmFunction startFunction) {
         this.startFunction = startFunction;
+    }
+
+    public List<CustomSectionHolder> getCustomSections() {
+        return customSections;
+    }
+
+    public void setCustomSections(List<CustomSectionHolder> customSections) {
+        this.customSections = customSections;
     }
 }

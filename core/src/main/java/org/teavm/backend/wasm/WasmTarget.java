@@ -202,6 +202,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
     private boolean obfuscated;
     private Set<MethodReference> asyncMethods;
     private boolean hasThreads;
+    private final WasmDependencyListener wasmDependencyListener = new WasmDependencyListener();
 
     @Override
     public void setController(TeaVMTargetController controller) {
@@ -235,14 +236,14 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
     public List<ClassHolderTransformer> getTransformers() {
         List<ClassHolderTransformer> transformers = new ArrayList<>();
         transformers.add(new ClassPatch());
-        transformers.add(new WasmDependencyListener());
+        transformers.add(wasmDependencyListener);
         return transformers;
     }
 
     @Override
     public List<DependencyListener> getDependencyListeners() {
         List<DependencyListener> listeners = new ArrayList<>();
-        listeners.add(new WasmDependencyListener());
+        listeners.add(wasmDependencyListener);
         return listeners;
     }
 
@@ -504,6 +505,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         module.add(initFunction);
         module.setStartFunction(initFunction);
         module.add(createStartFunction(names));
+        module.setCustomSections(wasmDependencyListener.getCustomSections());
 
         for (String functionName : classGenerator.getFunctionTable()) {
             WasmFunction function = module.getFunctions().get(functionName);
