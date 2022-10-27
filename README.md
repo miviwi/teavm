@@ -1,9 +1,11 @@
 TeaVM-WASI
 ==========
 
-This repo contains a friendly fork of [TeaVM](https://github.com/konsoletyper/teavm), modified to support [WASI](https://wasi.dev/) and the WebAssembly [Component Model](https://github.com/WebAssembly/component-model) proposal.  We hope to eventually merge this work upstream if there is interest from the TeaVM maintainers.  In the meantime, we will be publishing the relevant packages to the Maven Central Repository under the `groupId` "com.fermyon".
+This repo contains a friendly fork of [TeaVM](https://github.com/konsoletyper/teavm), modified to support [WASI](https://wasi.dev/) and the WebAssembly [Component Model](https://github.com/WebAssembly/component-model) proposal.  We hope to eventually merge this work upstream if there is interest from the TeaVM maintainers.  In the meantime, we have published the relevant packages to the Maven Central Repository under the `groupId` [com.fermyon](https://search.maven.org/search?q=g:com.fermyon).
 
-See [tests/wasi](tests/wasi) for an example.
+See [here](https://github.com/dicej/spin-teavm-example/blob/main/pom.xml) for an example of how to use the Maven plugin in your project.
+
+See [tests/wasi](tests/wasi) for an example command line app which exercises various WASI features.
 
 The remainder of this document consists of the original TeaVM README.md.
 
