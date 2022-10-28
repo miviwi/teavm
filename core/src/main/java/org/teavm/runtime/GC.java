@@ -45,7 +45,6 @@ public final class GC {
 
     static RelocationBlock lastRelocationBlock;
     static boolean isFullGC = true;
-    private static int youngGCCount;
 
     static native Address gcStorageAddress();
 
@@ -182,14 +181,9 @@ public final class GC {
             minRequestedSize = computeMinRequestedSize(size);
         }
 
-        if (!isFullGC) {
-            if (++youngGCCount >= 8 && isAboutToExpand(minRequestedSize)) {
-                triggerFullGC();
-                doCollectGarbage();
-                youngGCCount = 0;
-            }
-        } else {
-            youngGCCount = 0;
+        if (!isFullGC && isAboutToExpand(minRequestedSize)) {
+            triggerFullGC();
+            doCollectGarbage();
         }
         isFullGC = false;
 
@@ -1398,13 +1392,15 @@ public final class GC {
                     return;
                 }
             }
-            if (newSize == minimumSize) {
-                freeChunks--;
-                totalChunks--;
-            } else {
-                lastChunk.size -= (int) (oldSize - newSize);
-            }
             resizeHeap(newSize);
+            if (availableBytes() != oldSize) {
+                if (newSize == minimumSize) {
+                    freeChunks--;
+                    totalChunks--;
+                } else {
+                    lastChunk.size -= (int) (oldSize - newSize);
+                }
+            }
 
             currentChunkPointer = gcStorageAddress().toStructure();
         }
@@ -1472,7 +1468,8 @@ public final class GC {
     }
 
     private static boolean isMarked(RuntimeObject object) {
-        return (object.classReference & RuntimeObject.GC_MARKED) != 0
+        return object.toAddress().isLessThan(heapAddress())
+                || (object.classReference & RuntimeObject.GC_MARKED) != 0
                 || (!isFullGC && (object.classReference & RuntimeObject.GC_OLD_GENERATION) != 0);
     }
 
