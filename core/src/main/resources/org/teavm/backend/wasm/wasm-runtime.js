@@ -35,6 +35,14 @@ TeaVM.wasm = function() {
             lineBuffer += String.fromCharCode(charCode);
         }
     }
+    function putwchars(buffer, count) {
+        let instance = controller.instance;
+        let memory = instance.exports.memory.buffer;
+        for (let i = 0; i < count; ++i) {
+            // TODO: support UTF-8
+            putwchar(memory[buffer++]);
+        }
+    }
     function towlower(code) {
         return String.fromCharCode(code).toLowerCase().charCodeAt(0);
     }
@@ -88,7 +96,14 @@ TeaVM.wasm = function() {
         controller.reject = null;
         controller.complete = false;
         obj.teavm = {
-            putwchar: putwchar,
+            currentTimeMillis: currentTimeMillis,
+            nanoTime: function() { return performance.now(); },
+            isnan: isNaN,
+            teavm_getNaN: function() { return NaN; },
+            isinf: function(n) { return !isFinite(n) },
+            isfinite: isFinite,
+            putwcharsOut: (chars, count) => putwchars(controller, chars, count),
+            putwcharsErr: (chars, count) => putwchars(controller, chars, count),
             towlower: towlower,
             towupper: towupper,
             getNativeOffset: getNativeOffset,

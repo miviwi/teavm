@@ -19,7 +19,6 @@ import static org.teavm.interop.Memory.free;
 import static org.teavm.interop.Memory.malloc;
 import static org.teavm.interop.wasi.Wasi.printBuffer;
 import org.teavm.interop.Address;
-import org.teavm.interop.Import;
 import org.teavm.interop.StaticInit;
 import org.teavm.interop.Unmanaged;
 import org.teavm.runtime.RuntimeObject;
@@ -87,8 +86,9 @@ public final class WasmRuntime {
         return value;
     }
 
-    @Import(name = "print", module = "spectest")
-    public static native void print(int a);
+    public static void print(int a) {
+        WasmSupport.print(a);
+    }
 
     @Unmanaged
     public static void wasiPrintInt(int i) {

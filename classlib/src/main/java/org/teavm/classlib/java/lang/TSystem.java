@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Properties;
 import org.teavm.backend.c.intrinsic.RuntimeInclude;
 import org.teavm.backend.javascript.spi.GeneratedBy;
+import org.teavm.backend.wasm.runtime.WasmSupport;
 import org.teavm.classlib.PlatformDetector;
 import org.teavm.classlib.fs.VirtualFileSystemProvider;
 import org.teavm.classlib.fs.c.CFileSystem;
@@ -171,7 +172,7 @@ public final class TSystem extends TObject {
         if (PlatformDetector.isWebAssembly()) {
             return currentTimeMillisWasi();
         } else {
-            return (long) currentTimeMillisC();
+            return currentTimeMillisC();
         }
     }
 

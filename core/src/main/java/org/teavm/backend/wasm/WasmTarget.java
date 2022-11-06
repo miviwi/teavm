@@ -105,6 +105,7 @@ import org.teavm.backend.wasm.render.WasmCRenderer;
 import org.teavm.backend.wasm.render.WasmRenderer;
 import org.teavm.backend.wasm.transformation.IndirectCallTraceTransformation;
 import org.teavm.backend.wasm.transformation.MemoryAccessTraceTransformation;
+import org.teavm.backend.wasm.transformation.WasiSupportClassTransformer;
 import org.teavm.common.ServiceRepository;
 import org.teavm.dependency.ClassDependency;
 import org.teavm.dependency.DependencyAnalyzer;
@@ -293,6 +294,15 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
 
     public void setObfuscated(boolean obfuscated) {
         this.obfuscated = obfuscated;
+    }
+
+    public void setRuntimeType(WasmRuntimeType runtimeType) {
+        this.runtimeType = runtimeType;
+    }
+
+    @Override
+    public WasmRuntimeType getRuntimeType() {
+        return runtimeType;
     }
 
     @Override
@@ -545,6 +555,17 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         WasmFunction function = new WasmFunction("teavm_start");
         function.setExportName("_start");
         function.getBody().add(new WasmCall(names.forMethod(WASI_START_MAIN)));
+        return function;
+    }
+
+    private WasmFunction createStartCallerFunction() {
+        WasmFunction function = new WasmFunction("teavm_call_start");
+        function.setExportName("_start");
+
+        WasmCall call = new WasmCall("teavm_start");
+        call.getArguments().add(new WasmInt32Constant(0));
+        function.getBody().add(call);
+
         return function;
     }
 

@@ -19,6 +19,7 @@ import static org.teavm.interop.Memory.free;
 import static org.teavm.interop.Memory.malloc;
 import static org.teavm.interop.wasi.Wasi.printBuffer;
 import org.teavm.backend.c.intrinsic.RuntimeInclude;
+import org.teavm.backend.wasm.runtime.WasmSupport;
 import org.teavm.classlib.PlatformDetector;
 import org.teavm.interop.Address;
 import org.teavm.interop.Import;
@@ -29,19 +30,28 @@ public final class Console {
     private Console() {
     }
 
-    public static void writeStderr(int b) {
+    public static void writeStderr(byte[] data, int off, int len) {
         if (PlatformDetector.isC()) {
-            writeC(b);
+            for (int i = 0; i < len; ++i) {
+                byte b = data[i + off];
+                writeC(b & 0xFF);
+            }
         } else if (PlatformDetector.isWebAssembly()) {
             writeWasi(2, b);
         } else {
-            writeJs(b);
+            for (int i = 0; i < len; ++i) {
+                byte b = data[i + off];
+                writeJs(b & 0xFF);
+            }
         }
     }
 
-    public static void writeStdout(int b) {
+    public static void writeStdout(byte[] data, int off, int len) {
         if (PlatformDetector.isC()) {
-            writeC(b);
+            for (int i = 0; i < len; ++i) {
+                byte b = data[i + off];
+                writeC(b & 0xFF);
+            }
         } else if (PlatformDetector.isWebAssembly()) {
             writeWasi(1, b);
         } else {
