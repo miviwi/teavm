@@ -103,6 +103,7 @@ import org.teavm.backend.wasm.render.WasmBinaryVersion;
 import org.teavm.backend.wasm.render.WasmBinaryWriter;
 import org.teavm.backend.wasm.render.WasmCRenderer;
 import org.teavm.backend.wasm.render.WasmRenderer;
+import org.teavm.backend.wasm.runtime.WasmSupport;
 import org.teavm.backend.wasm.transformation.IndirectCallTraceTransformation;
 import org.teavm.backend.wasm.transformation.MemoryAccessTraceTransformation;
 import org.teavm.backend.wasm.transformation.WasiSupportClassTransformer;
@@ -388,6 +389,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         dependencyAnalyzer.linkMethod(new MethodReference(EventQueue.class, "isStopped", boolean.class)).use();
         dependencyAnalyzer.linkMethod(new MethodReference(Thread.class, "setCurrentThread", Thread.class,
                 void.class)).use();
+        dependencyAnalyzer.linkMethod(new MethodReference(WasmSupport.class, "getArgs", String[].class)).use();
 
         ClassReader fiberClass = dependencyAnalyzer.getClassSource().get(Fiber.class.getName());
         for (MethodReader method : fiberClass.getMethods()) {
@@ -558,12 +560,14 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         return function;
     }
 
-    private WasmFunction createStartCallerFunction() {
+    private WasmFunction createStartCallerFunction(NameProvider names) {
         WasmFunction function = new WasmFunction("teavm_call_start");
         function.setExportName("_start");
 
+        WasmCall argsCall = new WasmCall(names.forMethod(new MethodReference(WasmSupport.class,
+                "getArgs", String[].class)));
         WasmCall call = new WasmCall("teavm_start");
-        call.getArguments().add(new WasmInt32Constant(0));
+        call.getArguments().add(argsCall);
         function.getBody().add(call);
 
         return function;
