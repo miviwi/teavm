@@ -106,6 +106,7 @@ import org.teavm.backend.wasm.render.WasmRenderer;
 import org.teavm.backend.wasm.runtime.WasmSupport;
 import org.teavm.backend.wasm.transformation.IndirectCallTraceTransformation;
 import org.teavm.backend.wasm.transformation.MemoryAccessTraceTransformation;
+import org.teavm.backend.wasm.transformation.WasiFileSystemProviderTransformer;
 import org.teavm.backend.wasm.transformation.WasiSupportClassTransformer;
 import org.teavm.common.ServiceRepository;
 import org.teavm.dependency.ClassDependency;
