@@ -469,10 +469,11 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         context.addIntrinsic(new ObjectIntrinsic());
         context.addIntrinsic(new ConsoleIntrinsic());
         context.addGenerator(new ArrayGenerator());
-        if (!Boolean.parseBoolean(System.getProperty("teavm.wasm.vmAssertions", "false"))) {
+        boolean vmAssertions = Boolean.parseBoolean(System.getProperty("teavm.wasm.vmAssertions", "false"));
+        if (!vmAssertions) {
             context.addIntrinsic(new MemoryTraceIntrinsic());
         }
-        context.addIntrinsic(new WasmHeapIntrinsic());
+        context.addIntrinsic(new WasmHeapIntrinsic(vmAssertions));
         context.addIntrinsic(new FiberIntrinsic());
 
         IntrinsicFactoryContext intrinsicFactoryContext = new IntrinsicFactoryContext();

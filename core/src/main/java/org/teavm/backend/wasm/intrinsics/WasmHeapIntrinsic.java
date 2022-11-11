@@ -19,10 +19,17 @@ import org.teavm.ast.InvocationExpr;
 import org.teavm.backend.wasm.WasmHeap;
 import org.teavm.backend.wasm.model.expression.WasmBlock;
 import org.teavm.backend.wasm.model.expression.WasmExpression;
+import org.teavm.backend.wasm.model.expression.WasmInt32Constant;
 import org.teavm.backend.wasm.model.expression.WasmMemoryGrow;
 import org.teavm.model.MethodReference;
 
 public class WasmHeapIntrinsic implements WasmIntrinsic {
+    private boolean trace;
+
+    public WasmHeapIntrinsic(boolean trace) {
+        this.trace = trace;
+    }
+
     @Override
     public boolean isApplicable(MethodReference methodReference) {
         if (!methodReference.getClassName().equals(WasmHeap.class.getName())) {
