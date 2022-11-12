@@ -38,7 +38,7 @@ public class TFileInputStream extends InputStream {
 
     public TFileInputStream(TFile file) throws FileNotFoundException {
         VirtualFile virtualFile = file.findVirtualFile();
-        if (virtualFile == null || virtualFile.isDirectory()) {
+        if (virtualFile == null || !virtualFile.isFile()) {
             throw new FileNotFoundException();
         }
 

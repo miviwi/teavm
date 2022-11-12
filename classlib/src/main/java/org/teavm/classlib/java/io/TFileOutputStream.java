@@ -54,7 +54,7 @@ public class TFileOutputStream extends OutputStream {
             throw new FileNotFoundException("Invalid file name");
         }
         VirtualFile parentVirtualFile = file.findParentFile();
-        if (parentVirtualFile != null) {
+        if (parentVirtualFile != null && parentVirtualFile.isDirectory()) {
             try {
                 parentVirtualFile.createFile(file.getName());
             } catch (IOException e) {
@@ -63,6 +63,9 @@ public class TFileOutputStream extends OutputStream {
         }
 
         VirtualFile virtualFile = file.findVirtualFile();
+        if (virtualFile == null || !virtualFile.isFile()) {
+            throw new FileNotFoundException("Could not create file");
+        }
         accessor = virtualFile.createAccessor(false, true, append);
         if (accessor == null) {
             throw new FileNotFoundException();
