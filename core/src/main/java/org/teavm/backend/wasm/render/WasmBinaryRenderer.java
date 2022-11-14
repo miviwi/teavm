@@ -17,9 +17,11 @@ package org.teavm.backend.wasm.render;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.teavm.backend.wasm.model.CustomSectionHolder;
 import org.teavm.backend.wasm.model.WasmFunction;
@@ -59,6 +61,10 @@ public class WasmBinaryRenderer {
     }
 
     public void render(WasmModule module) {
+        render(module, Collections::emptyList);
+    }
+
+    public void render(WasmModule module, Supplier<Collection<? extends WasmCustomSection>> customSectionSupplier) {
         output.writeInt32(0x6d736100);
         switch (version) {
             case V_0x1:
@@ -356,6 +362,22 @@ public class WasmBinaryRenderer {
         section.writeBytes(payload);
 
         writeSection(SECTION_UNKNOWN, "name", section.getData());
+    }
+
+    private void renderCustomSections(WasmModule module,
+            Supplier<Collection<? extends WasmCustomSection>> sectionSupplier) {
+        for (var customSection : module.getCustomSections().values()) {
+            renderCustomSection(customSection);
+        }
+        if (sectionSupplier != null) {
+            for (var customSection : sectionSupplier.get()) {
+                renderCustomSection(customSection);
+            }
+        }
+    }
+
+    private void renderCustomSection(WasmCustomSection customSection) {
+        writeSection(SECTION_UNKNOWN, customSection.getName(), customSection.getData());
     }
 
     static class LocalEntry {

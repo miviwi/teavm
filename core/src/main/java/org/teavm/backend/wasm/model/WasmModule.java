@@ -54,6 +54,30 @@ public class WasmModule {
         return readonlyFunctions;
     }
 
+    public void add(WasmCustomSection customSection) {
+        if (customSections.containsKey(customSection.getName())) {
+            throw new IllegalArgumentException("Custom section " + customSection.getName()
+                    + " already defined in this module");
+        }
+        if (customSection.module != null) {
+            throw new IllegalArgumentException("Given custom section is already registered in another module");
+        }
+        customSections.put(customSection.getName(), customSection);
+        customSection.module = this;
+    }
+
+    public void remove(WasmCustomSection customSection) {
+        if (customSection.module != this) {
+            return;
+        }
+        customSection.module = null;
+        customSections.remove(customSection.getName());
+    }
+
+    public Map<? extends String, ? extends WasmCustomSection> getCustomSections() {
+        return readonlyCustomSections;
+    }
+
     public List<WasmFunction> getFunctionTable() {
         return functionTable;
     }
