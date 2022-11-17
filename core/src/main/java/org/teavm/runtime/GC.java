@@ -66,6 +66,8 @@ public final class GC {
 
     public static native void resizeHeap(long size);
 
+    public static native boolean canShrinkHeap();
+
     private static native int regionSize();
 
     public static native void writeBarrier(RuntimeObject object);
@@ -1381,7 +1383,7 @@ public final class GC {
                 freeChunks++;
                 totalChunks++;
             }
-        } else {
+        } else if (canShrinkHeap()) {
             long minimumSize = lastChunk.toAddress().toLong() - heapAddress().toLong();
             if (lastChunk.classReference != 0) {
                 minimumSize += objectSize(lastChunk);
