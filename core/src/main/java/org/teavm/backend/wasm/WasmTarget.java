@@ -24,6 +24,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -386,7 +387,6 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         dependencyAnalyzer.linkMethod(new MethodReference(EventQueue.class, "isStopped", boolean.class)).use();
         dependencyAnalyzer.linkMethod(new MethodReference(Thread.class, "setCurrentThread", Thread.class,
                 void.class)).use();
-        dependencyAnalyzer.linkMethod(new MethodReference(WasmSupport.class, "getArgs", String[].class)).use();
 
         var fiberClass = dependencyAnalyzer.getClassSource().get(Fiber.class.getName());
         for (MethodReader method : fiberClass.getMethods()) {
@@ -561,13 +561,10 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
     }
 
     private WasmFunction createStartCallerFunction(NameProvider names) {
-        WasmFunction function = new WasmFunction("teavm_call_start");
+        var function = new WasmFunction("teavm_call_start");
         function.setExportName("_start");
 
-        WasmCall argsCall = new WasmCall(names.forMethod(new MethodReference(WasmSupport.class,
-                "getArgs", String[].class)));
-        WasmCall call = new WasmCall("teavm_start");
-        call.getArguments().add(argsCall);
+        var call = new WasmCall(names.forMethod(new MethodReference(WasmSupport.class, "runWithoutArgs", void.class)));
         function.getBody().add(call);
 
         return function;
@@ -1119,5 +1116,10 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                     throw new IllegalArgumentException();
             }
         }
+    }
+
+    @Override
+    public Collection<? extends MethodReference> getInitializerMethods() {
+        return Collections.singleton(new MethodReference(WasmSupport.class, "initClasses", void.class));
     }
 }
