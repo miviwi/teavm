@@ -15,6 +15,7 @@
  */
 package org.teavm.backend.wasm.render;
 
+import static org.teavm.backend.wasm.dwarf.DwarfConstants.DW_TAG_SUBPROGRAM;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,6 +55,8 @@ public class WasmBinaryRenderer {
     private Map<String, Integer> functionIndexes = new HashMap<>();
     private boolean obfuscated;
     private DwarfGenerator dwarfGenerator;
+    private DwarfInfoWriter infoWriter;
+    private DwarfAbbreviation methodAbbrev;
 
     public WasmBinaryRenderer(WasmBinaryWriter output, WasmBinaryVersion version, boolean obfuscated,
             DwarfGenerator dwarfGenerator) {
@@ -61,6 +64,7 @@ public class WasmBinaryRenderer {
         this.version = version;
         this.obfuscated = obfuscated;
         this.dwarfGenerator = dwarfGenerator;
+        infoWriter = dwarfGenerator != null ? dwarfGenerator.getInfoWriter() : null;
     }
 
     public void render(WasmModule module) {
@@ -318,7 +322,26 @@ public class WasmBinaryRenderer {
         }
         code.writeByte(0x0B);
 
+        if (dwarfGenerator != null && function.getName() != null) {
+            infoWriter.tag(getMethodAbbrev());
+            infoWriter.writeInt(dwarfGenerator.strings.stringRef(function.getName()));
+            infoWriter.writeInt(offset);
+            infoWriter.writeInt(offset + code.getPosition());
+            infoWriter.emptyTag();
+        }
+
         return code.getData();
+    }
+
+    private DwarfAbbreviation getMethodAbbrev() {
+        if (methodAbbrev == null) {
+            methodAbbrev = infoWriter.abbreviation(DW_TAG_SUBPROGRAM, true, data -> {
+                data.writeLEB(DwarfConstants.DW_AT_NAME).writeLEB(DwarfConstants.DW_FORM_STRP);
+                data.writeLEB(DwarfConstants.DW_AT_LOW_PC).writeLEB(DwarfConstants.DW_FORM_ADDR);
+                data.writeLEB(DwarfConstants.DW_AT_HIGH_PC).writeLEB(DwarfConstants.DW_FORM_ADDR);
+            });
+        }
+        return methodAbbrev;
     }
 
     private void renderInitializer(WasmBinaryWriter output, int value) {
