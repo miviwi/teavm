@@ -252,5 +252,5 @@ TeaVM.wasm = function() {
         }
     }
 
-    return { JavaError, load, create };
+    return { JavaError, load };
 }();
