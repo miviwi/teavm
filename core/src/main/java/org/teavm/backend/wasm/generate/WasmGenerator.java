@@ -61,6 +61,7 @@ public class WasmGenerator {
         ClassHolder cls = classSource.get(methodReference.getClassName());
         MethodHolder method = cls.getMethod(methodReference.getDescriptor());
         WasmFunction function = new WasmFunction(names.forMethod(method.getReference()));
+        function.setJavaMethod(methodReference);
 
         MethodReader reader = classSource.resolve(methodReference);
 
