@@ -138,7 +138,7 @@ public final class Memory {
         if (size < 512) {
             int needed = ceilingDivide(size, 8);
             long mask = ~(0xFFFFFFFFFFFFFFFFL << needed);
-            Address mapAddress = Address.fromInt(offset / 64);
+            Address mapAddress = Address.fromInt((offset / 64) * 8);
 
             long entry = mapAddress.getLong();
             if (((entry >>> (offset % 64)) & mask) != mask) {
