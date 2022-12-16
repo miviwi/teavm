@@ -539,6 +539,9 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
 
         var writer = new WasmBinaryWriter();
         var debugBuilder = debugging ? new DebugInfoBuilder() : null;
+        if (debugBuilder != null) {
+            classGenerator.writeDebug(debugBuilder.classLayout());
+        }
         var renderer = new WasmBinaryRenderer(
                 writer, version, obfuscated, dwarfGenerator, dwarfClassGen,
                 debugBuilder != null ? debugBuilder.lines() : null,
