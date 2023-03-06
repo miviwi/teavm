@@ -27,8 +27,7 @@ Useful links:
 * [Discussion on Google Groups](https://groups.google.com/forum/#!forum/teavm)
 
 
-Building TeaVM
---------------
+## Building TeaVM
 
 Simply clone source code (`git clone https://github.com/konsoletyper/teavm.git`)
 and run Gradle build (`./gradlew publishToMavenLocal` or `gradlew.bat publishToMavenLocal`).
@@ -67,8 +66,7 @@ If you are not satisfied with Maven, you can embed TeaVM in your program or even
 Please, notice that these APIs for embedding are still unstable and may change between versions.
 
 
-WebAssembly
------------
+## WebAssembly
 
 WebAssembly support is in experimental status. It may lack major features available in JavaScript backend. 
 There's no documentation yet, and you should do many things by hands 
@@ -95,8 +93,7 @@ If you want to contribute code to implementation of Java class library,
 please make sure it's not based on OpenJDK or other code licensed under (L)GPL.
 
 
-Feedback
---------
+## Feedback
 
 More information is available at the official site: https://teavm.org.
 
