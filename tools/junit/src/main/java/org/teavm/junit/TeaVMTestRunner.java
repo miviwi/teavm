@@ -256,7 +256,9 @@ public class TeaVMTestRunner extends Runner implements Filterable {
     }
 
     private void addChromeCommand(List<String> params) {
-        if (isWindows()) {
+        if (isMacos()) {
+            params.add("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
+        } else if (isWindows()) {
             params.add("cmd.exe");
             params.add("start");
             params.add("/C");
@@ -267,6 +269,10 @@ public class TeaVMTestRunner extends Runner implements Filterable {
     }
 
     private void addFirefoxCommand(List<String> params) {
+        if (isMacos()) {
+            params.add("/Applications/Firefox.app/Contents/MacOS/firefox");
+            return;
+        }
         if (isWindows()) {
             params.add("cmd.exe");
             params.add("/C");
@@ -277,6 +283,10 @@ public class TeaVMTestRunner extends Runner implements Filterable {
 
     private boolean isWindows() {
         return System.getProperty("os.name").toLowerCase().startsWith("windows");
+    }
+
+    private boolean isMacos() {
+        return System.getProperty("os.name").toLowerCase().startsWith("mac");
     }
 
     private Process browserTemplate(String name, String url, BiConsumer<String, List<String>> paramsBuilder) {
