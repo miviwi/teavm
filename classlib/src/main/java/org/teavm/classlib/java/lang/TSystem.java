@@ -140,10 +140,18 @@ public final class TSystem extends TObject {
         doArrayCopy(src, srcPos, dest, destPos, length);
     }
 
+    static void fastArraycopy(Object src, int srcPos, Object dest, int destPos, int length) {
+        if (srcPos < 0 || destPos < 0 || length < 0 || srcPos + length > Array.getLength(src)
+                || destPos + length > Array.getLength(dest)) {
+            throw new TIndexOutOfBoundsException();
+        }
+        doArrayCopy(src, srcPos, dest, destPos, length);
+    }
+
     @GeneratedBy(SystemNativeGenerator.class)
     @DelegateTo("doArrayCopyLowLevel")
     @NoSideEffects
-    private static native void doArrayCopy(Object src, int srcPos, Object dest, int destPos, int length);
+    static native void doArrayCopy(Object src, int srcPos, Object dest, int destPos, int length);
 
     @Unmanaged
     static void doArrayCopyLowLevel(RuntimeArray src, int srcPos, RuntimeArray dest, int destPos, int length) {
