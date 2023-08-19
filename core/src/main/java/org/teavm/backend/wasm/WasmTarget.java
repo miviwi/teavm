@@ -102,7 +102,9 @@ import org.teavm.backend.wasm.model.expression.WasmSetLocal;
 import org.teavm.backend.wasm.model.expression.WasmStoreInt32;
 import org.teavm.backend.wasm.model.expression.WasmUnreachable;
 import org.teavm.backend.wasm.optimization.UnusedFunctionElimination;
+import org.teavm.backend.wasm.render.ReportingWasmBinaryStatsCollector;
 import org.teavm.backend.wasm.render.WasmBinaryRenderer;
+import org.teavm.backend.wasm.render.WasmBinaryStatsCollector;
 import org.teavm.backend.wasm.render.WasmBinaryVersion;
 import org.teavm.backend.wasm.render.WasmBinaryWriter;
 import org.teavm.backend.wasm.render.WasmCRenderer;
@@ -433,6 +435,9 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
     @Override
     public void emit(ListableClassHolderSource classes, BuildTarget buildTarget, String outputName)
             throws IOException {
+        prepareStats();
+
+        var statsCollector = this.statsCollector != null ? this.statsCollector : WasmBinaryStatsCollector.EMPTY;
         WasmModule module = new WasmModule();
         WasmFunction initFunction = new WasmFunction("__start__");
 
@@ -444,7 +449,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         ClassMetadataRequirements metadataRequirements = new ClassMetadataRequirements(controller.getDependencyInfo());
         WasmClassGenerator classGenerator = new WasmClassGenerator(classes, controller.getUnprocessedClassSource(),
                 vtableProvider, tagRegistry, binaryWriter, names, metadataRequirements,
-                controller.getClassInitializerInfo(), characteristics, dwarfClassGen);
+                controller.getClassInitializerInfo(), characteristics, dwarfClassGen, statsCollector);
 
         Decompiler decompiler = new Decompiler(classes, new HashSet<>(), false);
         var stringPool = classGenerator.getStringPool();
@@ -537,22 +542,8 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             new IndirectCallTraceTransformation(module).apply();
         }
 
-        var writer = new WasmBinaryWriter();
-        var debugBuilder = debugging ? new DebugInfoBuilder() : null;
-        if (debugBuilder != null) {
-            classGenerator.writeDebug(debugBuilder.classLayout());
-        }
-        var renderer = new WasmBinaryRenderer(
-                writer, version, obfuscated, dwarfGenerator, dwarfClassGen,
-                debugBuilder != null ? debugBuilder.lines() : null,
-                debugBuilder != null ? debugBuilder.variables() : null
-        );
-        renderer.render(module, buildDebug(dwarfGenerator, dwarfClassGen, debugBuilder));
-
-        try (OutputStream output = buildTarget.createResource(outputName)) {
-            output.write(writer.getData());
-            output.flush();
-        }
+        writeBinaryWasm(buildTarget, outputName, module, classGenerator, dwarfGenerator, dwarfClassGen,
+                statsCollector);
 
         if (wastEmitted) {
             emitWast(module, buildTarget, getBaseName(outputName) + ".wast");
@@ -560,9 +551,50 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         if (cEmitted) {
             emitC(module, buildTarget, getBaseName(outputName) + ".wasm.c");
         }
+        if (statsCollector != null) {
+            writeStats(buildTarget, outputName);
+        }
 
         if (runtimeType == WasmRuntimeType.TEAVM) {
             emitRuntime(buildTarget, getBaseName(outputName) + ".wasm-runtime.js");
+        }
+    }
+    
+    private void prepareStats() {
+        var statsProp = controller.getProperties().getProperty("teavm.wasm.stats");
+        var stats = Boolean.parseBoolean(statsProp);
+        if (stats) {
+            statsCollector = new ReportingWasmBinaryStatsCollector();
+        }
+    }
+
+    private void writeStats(BuildTarget buildTarget, String outputName) throws IOException {
+        try (var writer = new OutputStreamWriter(buildTarget.createResource(outputName + ".stats.txt"))) {
+            statsCollector.write(writer);
+        }
+    }
+
+    private void writeBinaryWasm(BuildTarget buildTarget, String outputName,
+            WasmModule module, WasmClassGenerator classGenerator, DwarfGenerator dwarfGenerator,
+            DwarfClassGenerator dwarfClassGen, WasmBinaryStatsCollector statsCollector) throws IOException {
+
+        var writer = new WasmBinaryWriter();
+        var debugBuilder = debugging ? new DebugInfoBuilder() : null;
+        if (debugBuilder != null) {
+            classGenerator.writeDebug(debugBuilder.classLayout());
+        }
+
+        var renderer = new WasmBinaryRenderer(
+                writer, version, obfuscated, dwarfGenerator, dwarfClassGen,
+                debugBuilder != null ? debugBuilder.lines() : null,
+                debugBuilder != null ? debugBuilder.variables() : null,
+                statsCollector
+        );
+        renderer.render(module, buildDebug(dwarfGenerator, dwarfClassGen, debugBuilder));
+
+        try (var output = buildTarget.createResource(outputName)) {
+            output.write(writer.getData());
+            output.flush();
         }
     }
 
