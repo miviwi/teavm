@@ -402,6 +402,10 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         }
 
         dependencyAnalyzer.addDependencyListener(new StringsDependencyListener());
+
+        for (var intrinsic : additionalIntrinsics) {
+            intrinsic.contributeDependencies(dependencyAnalyzer);
+        }
     }
 
     @Override
