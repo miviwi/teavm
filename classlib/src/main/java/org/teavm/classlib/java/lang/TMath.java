@@ -178,7 +178,6 @@ public final class TMath extends TObject {
     private static native double randomC();
 
     @GeneratedBy(MathNativeGenerator.class)
-    @Import(module = "teavmMath", name = "random")
     private static native double randomImpl();
 
     public static int min(int a, int b) {
