@@ -42,6 +42,7 @@ import org.teavm.backend.wasm.binary.BinaryWriter;
 import org.teavm.backend.wasm.debug.DebugInfoBuilder;
 import org.teavm.backend.wasm.generate.DwarfClassGenerator;
 import org.teavm.backend.wasm.generate.DwarfGenerator;
+import org.teavm.backend.wasm.generate.SourceFileResolver;
 import org.teavm.backend.wasm.generate.WasmClassGenerator;
 import org.teavm.backend.wasm.generate.WasmDependencyListener;
 import org.teavm.backend.wasm.generate.WasmGenerationContext;
@@ -305,6 +306,10 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
 
     public void setRuntimeType(WasmRuntimeType runtimeType) {
         this.runtimeType = runtimeType;
+    }
+
+    public void setSourceFileResolver(SourceFileResolver sourceFileResolver) {
+        this.sourceFileResolver = sourceFileResolver;
     }
 
     @Override
