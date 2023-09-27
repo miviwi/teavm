@@ -54,10 +54,24 @@ TeaVM.wasm = function() {
         let memory = instance.exports.memory.buffer;
         let arrayPtr = instance.exports.teavm_stringData(string);
         let length = instance.exports.teavm_arrayLength(arrayPtr);
-        let arrayData = new DataView(memory, instance.exports.teavm_charArrayData(arrayPtr), length * 2);
+        let arrayData = new Uint16Array(memory, instance.exports.teavm_charArrayData(arrayPtr), length * 2);
         for (let i = 0; i < length; ++i) {
-            putwchar(arrayData.getUint16(i * 2, true));
+            putwchar(arrayData[i]);
         }
+    }
+    function dateToString(timestamp, controller) {
+        const s = new Date(timestamp).toString();
+        let instance = controller.instance;
+        let result = instance.allocateString(s.length);
+        if (result === 0) {
+            return 0;
+        }
+        let resultAddress = instance.objectArrayData(instance.stringData(result));
+        let resultView = new Uint16Array(instance.exports.memory.buffer, resultAddress, s.length);
+        for (let i = 0; i < s.length; ++i) {
+            resultView[i] = s.charCodeAt(i);
+        }
+        return result;
     }
     function logInt(i) {
         lineBuffer += i.toString();
@@ -91,7 +105,7 @@ TeaVM.wasm = function() {
         controller.complete = false;
         obj.teavm = {
             currentTimeMillis: currentTimeMillis,
-            nanoTime: function() { return performance.now(); },
+            nanoTime: () => performance.now(),
             putwcharsOut: (chars, count) => putwchars(controller, chars, count),
             putwcharsErr: (chars, count) => putwchars(controller, chars, count),
             getNativeOffset: getNativeOffset,
