@@ -33,22 +33,6 @@ class WasiRunStrategy implements TestRunStrategy {
     }
 
     @Override
-    public void beforeAll() {
-    }
-
-    @Override
-    public void afterAll() {
-    }
-
-    @Override
-    public void beforeThread() {
-    }
-
-    @Override
-    public void afterThread() {
-    }
-
-    @Override
     public void runTest(TestRun run) throws IOException {
         try {
             List<String> runtimeOutput = new ArrayList<>();
