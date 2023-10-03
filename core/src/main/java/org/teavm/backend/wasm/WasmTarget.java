@@ -97,6 +97,8 @@ import org.teavm.backend.wasm.model.expression.WasmInt32Subtype;
 import org.teavm.backend.wasm.model.expression.WasmIntBinary;
 import org.teavm.backend.wasm.model.expression.WasmIntBinaryOperation;
 import org.teavm.backend.wasm.model.expression.WasmIntType;
+import org.teavm.backend.wasm.model.expression.WasmIntUnary;
+import org.teavm.backend.wasm.model.expression.WasmIntUnaryOperation;
 import org.teavm.backend.wasm.model.expression.WasmLoadInt32;
 import org.teavm.backend.wasm.model.expression.WasmReturn;
 import org.teavm.backend.wasm.model.expression.WasmSetLocal;
@@ -151,9 +153,7 @@ import org.teavm.model.classes.VirtualTableProvider;
 import org.teavm.model.instructions.CloneArrayInstruction;
 import org.teavm.model.instructions.InvocationType;
 import org.teavm.model.instructions.InvokeInstruction;
-import org.teavm.model.lowlevel.CallSiteDescriptor;
 import org.teavm.model.lowlevel.Characteristics;
-import org.teavm.model.lowlevel.CheckInstructionTransformation;
 import org.teavm.model.lowlevel.ClassInitializerEliminator;
 import org.teavm.model.lowlevel.ClassInitializerTransformer;
 import org.teavm.model.lowlevel.LowLevelNullCheckFilter;
@@ -205,7 +205,6 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
     private List<WasmIntrinsicFactory> additionalIntrinsics = new ArrayList<>();
     private NullCheckInsertion nullCheckInsertion;
     private BoundCheckInsertion boundCheckInsertion = new BoundCheckInsertion();
-    private CheckInstructionTransformation checkTransformation = new CheckInstructionTransformation();
     private int minHeapSize = 2 * 1024 * 1024;
     private int maxHeapSize = 128 * 1024 * 1024;
     private boolean obfuscated;
@@ -219,7 +218,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         characteristics = new Characteristics(controller.getUnprocessedClassSource());
         classInitializerEliminator = new ClassInitializerEliminator(controller.getUnprocessedClassSource());
         classInitializerTransformer = new ClassInitializerTransformer();
-        shadowStackTransformer = new ShadowStackTransformer(characteristics, true);
+        shadowStackTransformer = new ShadowStackTransformer(characteristics);
         nullCheckInsertion = new NullCheckInsertion(new LowLevelNullCheckFilter(characteristics));
         writeBarrierInsertion = new WriteBarrierInsertion(characteristics);
 
@@ -346,6 +345,10 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                 Address.class)).use();
         dependencyAnalyzer.linkMethod(new MethodReference(WasmRuntime.class, "setExceptionHandlerId", Address.class,
                 int.class, void.class)).use();
+        dependencyAnalyzer.linkMethod(new MethodReference(WasmRuntime.class, "setExceptionHandlerSkip",
+                Address.class, void.class)).use();
+        dependencyAnalyzer.linkMethod(new MethodReference(WasmRuntime.class, "setExceptionHandlerRestore",
+                Address.class, void.class)).use();
         dependencyAnalyzer.linkMethod(new MethodReference(WasmRuntime.class, "getCallSiteId", Address.class,
                 int.class)).use();
         dependencyAnalyzer.linkMethod(new MethodReference(WasmRuntime.class, "resourceMapKeys", Address.class,
@@ -373,6 +376,12 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
 
         dependencyAnalyzer.linkMethod(new MethodReference(ExceptionHandling.class, "throwException",
                 Throwable.class, void.class)).use();
+        dependencyAnalyzer.linkMethod(new MethodReference(ExceptionHandling.class, "throwNullPointerException",
+                void.class)).use();
+        dependencyAnalyzer.linkMethod(new MethodReference(ExceptionHandling.class, "throwClassCastException",
+                void.class)).use();
+        dependencyAnalyzer.linkMethod(new MethodReference(ExceptionHandling.class,
+                "throwArrayIndexOutOfBoundsException", void.class)).use();
 
         dependencyAnalyzer.linkMethod(new MethodReference(ExceptionHandling.class, "catchException",
                 Throwable.class)).use();
@@ -436,9 +445,8 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         classInitializerTransformer.transform(program);
         new CoroutineTransformation(controller.getUnprocessedClassSource(), asyncMethods, hasThreads)
                 .apply(program, method.getReference());
-        checkTransformation.apply(program, method.getResultType());
         shadowStackTransformer.apply(program, method);
-        checkPhis(program, method);
+        //checkPhis(program, method);
         writeBarrierInsertion.apply(program);
     }
 
@@ -479,7 +487,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         Decompiler decompiler = new Decompiler(classes, new HashSet<>(), false);
         var stringPool = classGenerator.getStringPool();
         var context = new WasmGenerationContext(classes, module, controller.getDiagnostics(),
-                vtableProvider, tagRegistry, stringPool, names);
+                vtableProvider, tagRegistry, stringPool, names, characteristics);
 
         context.addIntrinsic(new AddressIntrinsic(classGenerator));
         context.addIntrinsic(new StructureIntrinsic(classes, classGenerator));
@@ -526,7 +534,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
 
         generateMethods(classes, context, generator, classGenerator, binaryWriter, module, dwarfClassGen);
         new WasmInteropFunctionGenerator(classGenerator).generateFunctions(module);
-        exceptionHandlingIntrinsic.postProcess(CallSiteDescriptor.extract(classes, classes.getClassNames()));
+        exceptionHandlingIntrinsic.postProcess(context.callSites);
         generateIsSupertypeFunctions(tagRegistry, module, classGenerator);
         classGenerator.postProcess();
         new WasmSpecialFunctionGenerator(classGenerator, gcIntrinsic.regionSizeExpressions)
@@ -918,10 +926,8 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
 
         int tagOffset = classGenerator.getFieldOffset(new FieldReference(RuntimeClass.class.getName(), "tag"));
 
-        WasmExpression tagExpression = new WasmGetLocal(subtypeVar);
-        tagExpression = new WasmIntBinary(WasmIntType.INT32, WasmIntBinaryOperation.ADD, tagExpression,
-                new WasmInt32Constant(tagOffset));
-        tagExpression = new WasmLoadInt32(4, tagExpression, WasmInt32Subtype.INT32);
+        var tagExpression = new WasmLoadInt32(4, new WasmGetLocal(subtypeVar), WasmInt32Subtype.INT32);
+        tagExpression.setOffset(tagOffset);
         body.add(new WasmSetLocal(subtypeVar, tagExpression));
 
         ranges.sort(Comparator.comparingInt(range -> range.lower));
@@ -945,7 +951,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             int lowerHole = ranges.get(i - 1).upper;
             int upperHole = ranges.get(i).lower;
 
-            lowerCondition = new WasmIntBinary(WasmIntType.INT32, WasmIntBinaryOperation.GT_SIGNED,
+            lowerCondition = new WasmIntBinary(WasmIntType.INT32, WasmIntBinaryOperation.GE_SIGNED,
                     new WasmGetLocal(subtypeVar), new WasmInt32Constant(lowerHole));
             testLower = new WasmConditional(lowerCondition);
             body.add(testLower);
@@ -965,15 +971,12 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             List<WasmExpression> body) {
         int itemOffset = classGenerator.getFieldOffset(new FieldReference(RuntimeClass.class.getName(), "itemType"));
 
-        WasmExpression itemExpression = new WasmGetLocal(subtypeVar);
-        itemExpression = new WasmIntBinary(WasmIntType.INT32, WasmIntBinaryOperation.ADD, itemExpression,
-                new WasmInt32Constant(itemOffset));
-        itemExpression = new WasmLoadInt32(4, itemExpression, WasmInt32Subtype.INT32);
+        var itemExpression = new WasmLoadInt32(4, new WasmGetLocal(subtypeVar), WasmInt32Subtype.INT32);
+        itemExpression.setOffset(itemOffset);
         body.add(new WasmSetLocal(subtypeVar, itemExpression));
 
-        WasmExpression itemCondition = new WasmIntBinary(WasmIntType.INT32, WasmIntBinaryOperation.EQ,
-                new WasmGetLocal(subtypeVar), new WasmInt32Constant(0));
-        WasmConditional itemTest = new WasmConditional(itemCondition);
+        var itemTest = new WasmConditional(new WasmIntUnary(WasmIntType.INT32, WasmIntUnaryOperation.EQZ,
+                new WasmGetLocal(subtypeVar)));
         itemTest.setType(WasmType.INT32);
         itemTest.getThenBlock().getBody().add(new WasmInt32Constant(0));
 
@@ -1193,7 +1196,17 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                         TeaVMEntryPoint entryPoint = entryPointIter.next();
                         String name = manager.getNames().forMethod(entryPoint.getMethod());
                         WasmCall call = new WasmCall(name);
-                        call.getArguments().add(manager.generate(invocation.getArguments().get(0)));
+                        var arg = manager.generate(invocation.getArguments().get(0));
+                        if (manager.isManagedMethodCall(entryPoint.getMethod())) {
+                            var block = new WasmBlock(false);
+                            block.setType(WasmType.INT32);
+                            var callSiteId = manager.generateCallSiteId(invocation.getLocation());
+                            block.getBody().add(manager.generateRegisterCallSite(callSiteId,
+                                    invocation.getLocation()));
+                            block.getBody().add(arg);
+                            arg = block;
+                        }
+                        call.getArguments().add(arg);
                         call.setLocation(invocation.getLocation());
                         return call;
                     } else {

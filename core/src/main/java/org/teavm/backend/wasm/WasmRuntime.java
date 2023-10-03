@@ -24,75 +24,99 @@ import org.teavm.interop.Unmanaged;
 import org.teavm.runtime.RuntimeObject;
 
 @StaticInit
-@Unmanaged
 public final class WasmRuntime {
     private WasmRuntime() {
     }
 
+    @Unmanaged
     public static int compare(int a, int b) {
         return gt(a, b) ? 1 : lt(a, b) ? -1 : 0;
     }
 
+    @Unmanaged
     public static int compareUnsigned(int a, int b) {
         return gtu(a, b) ? 1 : ltu(a, b) ? -1 : 0;
     }
 
+    @Unmanaged
     public static int compareUnsigned(long a, long b) {
         return gtu(a, b) ? 1 : ltu(a, b) ? -1 : 0;
     }
 
+    @Unmanaged
     public static int compare(long a, long b) {
         return gt(a, b) ? 1 : lt(a, b) ? -1 : 0;
     }
 
+    @Unmanaged
     public static int compare(float a, float b) {
         return gt(a, b) ? 1 : lt(a, b) ? -1 : 0;
     }
 
+    @Unmanaged
     public static int compare(double a, double b) {
         return gt(a, b) ? 1 : lt(a, b) ? -1 : 0;
     }
 
+    @Unmanaged
     public static native float min(float a, float b);
 
+    @Unmanaged
     public static native double min(double a, double b);
 
+    @Unmanaged
     public static native float max(float a, float b);
 
+    @Unmanaged
     public static native double max(double a, double b);
 
+    @Unmanaged
     public static float remainder(float a, float b) {
         return a - (float) (int) (a / b) * b;
     }
 
+    @Unmanaged
     public static double remainder(double a, double b) {
         return a - (double) (long) (a / b) * b;
     }
 
+    @Unmanaged
     private static native boolean lt(int a, int b);
 
+    @Unmanaged
     private static native boolean gt(int a, int b);
 
+    @Unmanaged
     private static native boolean ltu(int a, int b);
 
+    @Unmanaged
     private static native boolean gtu(int a, int b);
 
+    @Unmanaged
     private static native boolean lt(long a, long b);
 
+    @Unmanaged
     private static native boolean gt(long a, long b);
 
+    @Unmanaged
     private static native boolean ltu(long a, long b);
 
+    @Unmanaged
     private static native boolean gtu(long a, long b);
 
+    @Unmanaged
     private static native boolean lt(float a, float b);
 
+    @Unmanaged
     private static native boolean gt(float a, float b);
 
+    @Unmanaged
     private static native boolean lt(double a, double b);
 
+    @Unmanaged
     private static native boolean gt(double a, double b);
 
+    @Unmanaged
     public static Address align(Address address, int alignment) {
         int value = address.toInt();
         if (value == 0) {
@@ -102,6 +126,7 @@ public final class WasmRuntime {
         return Address.fromInt(value);
     }
 
+    @Unmanaged
     public static int align(int value, int alignment) {
         if (value == 0) {
             return value;
@@ -110,6 +135,7 @@ public final class WasmRuntime {
         return value;
     }
 
+    @Unmanaged
     public static void print(int a) {
         WasmSupport.print(a);
     }
@@ -156,13 +182,16 @@ public final class WasmRuntime {
        wasiPrintString("TeaVM: out of memory!");
     }
 
+    @Unmanaged
     public static void fillZero(Address address, int count) {
         fill(address, (byte) 0, count);
     }
 
+    @Unmanaged
     public static void fill(Address address, byte value, int count) {
     }
 
+    @Unmanaged
     public static Address allocStack(int size) {
         Address stack = WasmHeap.stack;
         Address result = stack.add(4);
@@ -172,10 +201,12 @@ public final class WasmRuntime {
         return result;
     }
 
+    @Unmanaged
     public static Address getStackTop() {
         return WasmHeap.stack != WasmHeap.stackAddress ? WasmHeap.stack : null;
     }
 
+    @Unmanaged
     public static Address getNextStackFrame(Address stackFrame) {
         int size = stackFrame.getInt() + 2;
         Address result = stackFrame.add(-size * 4);
@@ -185,28 +216,47 @@ public final class WasmRuntime {
         return result;
     }
 
+    @Unmanaged
     public static int getStackRootCount(Address stackFrame) {
         return stackFrame.getInt();
     }
 
+    @Unmanaged
     public static Address getStackRootPointer(Address stackFrame) {
         int size = stackFrame.getInt();
         return stackFrame.add(-size * 4);
     }
 
+    @Unmanaged
     private static Address getExceptionHandlerPtr(Address stackFrame) {
         int size = stackFrame.getInt();
         return stackFrame.add(-size * 4 - 4);
     }
 
+    @Unmanaged
     public static int getCallSiteId(Address stackFrame) {
         return getExceptionHandlerPtr(stackFrame).getInt();
     }
 
+    @Unmanaged
     public static void setExceptionHandlerId(Address stackFrame, int id) {
-        getExceptionHandlerPtr(stackFrame).putInt(id);
+        var addr = getExceptionHandlerPtr(stackFrame);
+        addr.putInt(addr.getInt() + id + 2);
     }
 
+    @Unmanaged
+    public static void setExceptionHandlerSkip(Address stackFrame) {
+        var addr = getExceptionHandlerPtr(stackFrame);
+        addr.putInt(addr.getInt() + 1);
+    }
+
+    @Unmanaged
+    public static void setExceptionHandlerRestore(Address stackFrame) {
+        var addr = getExceptionHandlerPtr(stackFrame);
+        addr.putInt(addr.getInt() - 1);
+    }
+
+    @Unmanaged
     private static int hashCode(RuntimeString string) {
         int hashCode = 0;
         int length = string.characters.length;
@@ -218,6 +268,7 @@ public final class WasmRuntime {
         return hashCode;
     }
 
+    @Unmanaged
     private static boolean equals(RuntimeString first, RuntimeString second) {
         if (first.characters.length != second.characters.length) {
             return false;
@@ -242,6 +293,7 @@ public final class WasmRuntime {
         return result;
     }
 
+    @Unmanaged
     private static int resourceMapSize(Address map) {
         int result = 0;
         int sz = map.getInt();
@@ -256,6 +308,7 @@ public final class WasmRuntime {
         return result;
     }
 
+    @Unmanaged
     private static void fillResourceMapKeys(Address map, String[] target) {
         int sz = map.getInt();
         Address data = contentStart(map);
@@ -266,10 +319,11 @@ public final class WasmRuntime {
                 targetData.putAddress(entry);
                 targetData = targetData.add(Address.sizeOf());
             }
-            data = data.add(Address.sizeOf());
+            data = data.add(Address.sizeOf() * 2);
         }
     }
 
+    @Unmanaged
     private static Address contentStart(Address resource) {
         return resource.add(Address.sizeOf());
     }
@@ -319,6 +373,7 @@ public final class WasmRuntime {
         return null;
     }
 
+    @Unmanaged
     public static native void callFunctionFromTable(int index, RuntimeObject instance);
 
     static class RuntimeString extends RuntimeObject {
