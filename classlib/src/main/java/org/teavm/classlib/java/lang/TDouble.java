@@ -201,7 +201,18 @@ public class TDouble extends TNumber implements TComparable<TDouble> {
         if (this == other) {
             return true;
         }
-        return other instanceof TDouble && doubleToLongBits(((TDouble) other).value) == doubleToLongBits(value);
+        return other instanceof TDouble && equals(value, ((TDouble) other).value);
+    }
+
+    private static boolean equals(double a, double b) {
+        return PlatformDetector.isJavaScript() ? doubleEqualsJs(a, b) : equalsWithBits(a, b);
+    }
+
+    @InjectedBy(DoubleGenerator.class)
+    private static native boolean doubleEqualsJs(double a, double b);
+
+    private static boolean equalsWithBits(double a, double b) {
+        return a != a ? b != b : doubleToRawLongBits(a) == doubleToRawLongBits(b);
     }
 
     @Override
