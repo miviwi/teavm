@@ -27,6 +27,8 @@ import org.teavm.backend.c.runtime.fs.CFileSystem;
 import org.teavm.backend.javascript.spi.GeneratedBy;
 import org.teavm.backend.wasm.runtime.WasmSupport;
 import org.teavm.classlib.PlatformDetector;
+import org.teavm.classlib.impl.console.JSStderrPrintStream;
+import org.teavm.classlib.impl.console.JSStdoutPrintStream;
 import org.teavm.classlib.impl.console.StderrOutputStream;
 import org.teavm.classlib.impl.console.StdoutOutputStream;
 import org.teavm.classlib.java.io.TConsole;
