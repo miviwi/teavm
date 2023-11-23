@@ -762,15 +762,14 @@ public class TeaVMTestRunner extends Runner implements Filterable {
         return new Failure(description, throwable);
     }
 
-    private boolean submitRun(TestRun run) throws IOException {
+    private void submitRun(TestRun run) throws IOException {
         runsInCurrentClass.add(run);
         var strategy = runners.get(run.getKind());
         if (strategy == null) {
-            return false;
+            return;
         }
 
         strategy.runTest(run);
-        return true;
     }
 
     private File getOutputPath(Method method, TestPlatformSupport<?> platform) {
