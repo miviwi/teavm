@@ -32,6 +32,7 @@ local.properties
 !.idea/inspectionProfies
 !.idea/codeStyles
 !.idea/copyright
+
 !.idea/checkstyle-idea.xml
 
 dependency-reduced-pom.xml
