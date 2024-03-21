@@ -35,7 +35,6 @@ import org.teavm.classlib.java.io.TConsole;
 import org.teavm.classlib.java.io.TFileInputStream;
 import org.teavm.classlib.java.io.TFileOutputStream;
 import org.teavm.classlib.java.io.TInputStream;
-import org.teavm.classlib.java.io.TOutputStream;
 import org.teavm.classlib.java.io.TPrintStream;
 import org.teavm.classlib.java.lang.reflect.TArray;
 import org.teavm.dependency.PluggableDependency;
@@ -72,7 +71,7 @@ public final class TSystem extends TObject {
             if (PlatformDetector.isWebAssembly()) {
                 outCache = new TPrintStream((TOutputStream) (Object) new TFileOutputStream(1));
             } else {
-                outCache = new TPrintStream((TOutputStream) (Object) StdoutOutputStream.INSTANCE, false);
+                outCache = new TPrintStream(StdoutOutputStream.INSTANCE, false);
             }
         }
         return outCache;
@@ -83,7 +82,7 @@ public final class TSystem extends TObject {
             if (PlatformDetector.isWebAssembly()) {
                 errCache = new TPrintStream((TOutputStream) (Object) new TFileOutputStream(2));
             } else {
-                errCache = new TPrintStream((TOutputStream) (Object) StderrOutputStream.INSTANCE, false);
+                errCache = new TPrintStream(StderrOutputStream.INSTANCE, false);
             }
         }
         return errCache;
