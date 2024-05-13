@@ -106,6 +106,7 @@ import org.teavm.backend.wasm.model.expression.WasmReturn;
 import org.teavm.backend.wasm.model.expression.WasmSetLocal;
 import org.teavm.backend.wasm.model.expression.WasmStoreInt32;
 import org.teavm.backend.wasm.optimization.UnusedFunctionElimination;
+import org.teavm.backend.wasm.optimization.UnusedTypeElimination;
 import org.teavm.backend.wasm.render.ReportingWasmBinaryStatsCollector;
 import org.teavm.backend.wasm.render.WasmBinaryRenderer;
 import org.teavm.backend.wasm.render.WasmBinaryStatsCollector;
@@ -462,7 +463,6 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
 
         var statsCollector = this.statsCollector != null ? this.statsCollector : WasmBinaryStatsCollector.EMPTY;
         WasmModule module = new WasmModule();
-        WasmFunction initFunction = new WasmFunction("__start__");
 
         var vtableProvider = createVirtualTableProvider(classes);
         ClassHierarchy hierarchy = new ClassHierarchy(classes);
@@ -478,11 +478,13 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         var stringPool = classGenerator.getStringPool();
         WasmTag exceptionTag = null;
         if (exceptionsUsed) {
-            exceptionTag = new WasmTag();
-            module.addTag(exceptionTag);
+            exceptionTag = new WasmTag(functionTypes.of(null));
+            module.tags.add(exceptionTag);
         }
-        var context = new WasmGenerationContext(classes, module, controller.getDiagnostics(),
+        var context = new WasmGenerationContext(classes, module, functionTypes, functions, controller.getDiagnostics(),
                 vtableProvider, tagRegistry, stringPool, names, characteristics, exceptionTag);
+
+        var initFunction = new WasmFunction(functionTypes.of(null));
 
         context.addIntrinsic(new AddressIntrinsic(classGenerator));
         context.addIntrinsic(new StructureIntrinsic(classes, classGenerator));
@@ -529,11 +531,11 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                 asyncMethods::contains);
 
         generateMethods(classes, context, generator, classGenerator, binaryWriter, module, dwarfClassGen);
-        new WasmInteropFunctionGenerator(classGenerator).generateFunctions(module);
+        new WasmInteropFunctionGenerator(classGenerator, functionTypes).generateFunctions(module);
         exceptionHandlingIntrinsic.postProcess(context.callSites);
-        generateIsSupertypeFunctions(tagRegistry, module, classGenerator);
+        generateIsSupertypeFunctions(tagRegistry, classGenerator, functions);
         classGenerator.postProcess();
-        new WasmSpecialFunctionGenerator(classGenerator, gcIntrinsic.regionSizeExpressions)
+        new WasmSpecialFunctionGenerator(classGenerator, functionTypes, gcIntrinsic.regionSizeExpressions)
                 .generateSpecialFunctions(module);
         mutatorIntrinsic.setStaticGcRootsAddress(classGenerator.getStaticGcRootsAddress());
         mutatorIntrinsic.setClassesAddress(classGenerator.getClassesAddress());
@@ -545,13 +547,13 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         module.getSegments().add(dataSegment);
 
         renderMemoryLayout(module, binaryWriter.getAddress(), gcIntrinsic);
-        renderClinit(classes, classGenerator, module);
+        renderClinit(classes, classGenerator, functions);
         if (controller.wasCancelled()) {
             return;
         }
 
-        generateInitFunction(classes, initFunction, names, binaryWriter.getAddress());
-        module.add(initFunction);
+        generateInitFunction(classes, initFunction, functions, binaryWriter.getAddress());
+        module.functions.add(initFunction);
         module.setStartFunction(initFunction);
         module.add(createStartFunction(names));
         module.setCustomSections(wasmDependencyListener.getCustomSections());
@@ -563,12 +565,13 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         }
 
         new UnusedFunctionElimination(module).apply();
+        new UnusedTypeElimination(module).apply();
 
         if (Boolean.parseBoolean(System.getProperty("wasm.memoryTrace", "false"))) {
-            new MemoryAccessTraceTransformation(module).apply();
+            new MemoryAccessTraceTransformation(module, functionTypes).apply();
         }
         if (Boolean.parseBoolean(System.getProperty("wasm.indirectCallTrace", "false"))) {
-            new IndirectCallTraceTransformation(module).apply();
+            new IndirectCallTraceTransformation(module, functionTypes).apply();
         }
 
         writeBinaryWasm(buildTarget, outputName, module, classGenerator, dwarfGenerator, dwarfClassGen,
@@ -655,11 +658,14 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         return function;
     }
 
-    private WasmFunction createStartCallerFunction(NameProvider names) {
-        var function = new WasmFunction("teavm_call_start");
+    private WasmFunction createStartCallerFunction(WasmFunctionTypes functionTypes, WasmFunctionRepository functions) {
+        var function = new WasmFunction(functionTypes.of(null));
         function.setExportName("_start");
+        function.setName("teavm_call_start");
 
-        var call = new WasmCall(names.forMethod(new MethodReference(WasmSupport.class, "runWithoutArgs", void.class)));
+        var runWithoutArgsFunction = functions.forStaticMethod(new MethodReference(WasmSupport.class, "runWithoutArgs",
+                void.class));
+        var call = new WasmCall(runWithoutArgsFunction);
         function.getBody().add(call);
 
         return function;
@@ -688,7 +694,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
     }
 
     private void generateInitFunction(ListableClassReaderSource classes, WasmFunction initFunction,
-            NameProvider names, int heapAddress) {
+            WasmFunctionRepository functions, int heapAddress) {
 
         for (Class<?> javaCls : new Class<?>[] { WasmRuntime.class, WasmHeap.class }) {
             ClassReader cls = classes.get(javaCls.getName());
@@ -696,10 +702,10 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             if (clinit == null) {
                 continue;
             }
-            initFunction.getBody().add(new WasmCall(names.forClassInitializer(cls.getName())));
+            initFunction.getBody().add(new WasmCall(functions.forClassInitializer(cls.getName())));
         }
 
-        initFunction.getBody().add(new WasmCall(names.forMethod(INIT_HEAP_REF),
+        initFunction.getBody().add(new WasmCall(functions.forStaticMethod(INIT_HEAP_REF),
                 new WasmInt32Constant(heapAddress), new WasmInt32Constant(minHeapSize),
                 new WasmInt32Constant(maxHeapSize), new WasmInt32Constant(WasmHeap.DEFAULT_STACK_SIZE),
                 new WasmInt32Constant(WasmHeap.DEFAULT_BUFFER_SIZE)));
@@ -710,7 +716,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             if (clinit == null) {
                 continue;
             }
-            initFunction.getBody().add(new WasmCall(names.forClassInitializer(cls.getName())));
+            initFunction.getBody().add(new WasmCall(functions.forClassInitializer(cls.getName())));
         }
 
         for (String className : classes.getClassNames()) {
@@ -726,7 +732,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             if (clinit == null) {
                 continue;
             }
-            initFunction.getBody().add(new WasmCall(names.forClassInitializer(className)));
+            initFunction.getBody().add(new WasmCall(functions.forClassInitializer(className)));
         }
     }
 
@@ -736,7 +742,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
     }
 
     private void emitWast(WasmModule module, BuildTarget buildTarget, String outputName) throws IOException {
-        WasmRenderer renderer = new WasmRenderer();
+        WasmRenderer renderer = new WasmRenderer(module);
         renderer.setLineNumbersEmitted(debugging);
         renderer.render(module);
         try (OutputStream output = buildTarget.createResource(outputName);
@@ -746,7 +752,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
     }
 
     private void emitC(WasmModule module, BuildTarget buildTarget, String outputName) throws IOException {
-        WasmCRenderer renderer = new WasmCRenderer();
+        var renderer = new WasmCRenderer(module);
         renderer.setLineNumbersEmitted(cLineNumbersEmitted);
         renderer.setMemoryAccessChecked(Boolean.parseBoolean(System.getProperty("wasm.c.assertMemory", "false")));
         renderer.render(module);
@@ -806,13 +812,12 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                         || context.getIntrinsic(method.getReference()) != null) {
                     continue;
                 }
-                module.add(generator.generateDefinition(method.getReference()));
                 methods.add(method);
             }
         }
 
         var methodGeneratorContext = new MethodGeneratorContextImpl(binaryWriter,
-                context.getStringPool(), context.getDiagnostics(), context.names, classGenerator, classes);
+                context.getStringPool(), context.getDiagnostics(), context.functions, classGenerator, classes);
 
         for (MethodHolder method : methods) {
             ClassHolder cls = classes.get(method.getOwnerName());
@@ -839,7 +844,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             if (implementor.hasModifier(ElementModifier.NATIVE)) {
                 var methodGenerator = context.getGenerator(method.getReference());
                 if (methodGenerator != null) {
-                    WasmFunction function = context.getFunction(context.names.forMethod(method.getReference()));
+                    var function = context.functions.forMethod(method);
                     methodGenerator.apply(method.getReference(), function, methodGeneratorContext);
                 } else if (!isShadowStackMethod(method.getReference())) {
                     if (context.getImportedMethod(method.getReference()) == null) {
@@ -847,7 +852,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                         controller.getDiagnostics().error(location, "Method {{m0}} is native but "
                                 + "has no {{c1}} annotation on it", method.getReference(), Import.class.getName());
                     }
-                    generator.generateNative(method.getReference());
+                    generator.generateNative(method);
                 }
                 continue;
             }
@@ -857,7 +862,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             if (method == implementor) {
                 generator.generate(method.getReference(), implementor);
             } else {
-                generateStub(context.names, module, method, implementor);
+                generateStub(context.functions, method, implementor);
             }
             if (dwarfClassGen != null) {
                 var dwarfClass = dwarfClassGen.getClass(method.getOwnerName());
@@ -886,13 +891,10 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         }
     }
 
-    private void generateIsSupertypeFunctions(TagRegistry tagRegistry, WasmModule module,
-            WasmClassGenerator classGenerator) {
+    private void generateIsSupertypeFunctions(TagRegistry tagRegistry, WasmClassGenerator classGenerator,
+            WasmFunctionRepository functions) {
         for (ValueType type : classGenerator.getRegisteredClasses()) {
-            WasmFunction function = new WasmFunction(classGenerator.names.forSupertypeFunction(type));
-            function.getParameters().add(WasmType.INT32);
-            function.setResult(WasmType.INT32);
-            module.add(function);
+            var function = functions.forSupertype(type);
 
             WasmLocal subtypeVar = new WasmLocal(WasmType.INT32, "subtype");
             function.add(subtypeVar);
@@ -902,7 +904,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                 generateIsClass(subtypeVar, classGenerator, tagRegistry, className, function.getBody());
             } else if (type instanceof ValueType.Array) {
                 ValueType itemType = ((ValueType.Array) type).getItemType();
-                generateIsArray(subtypeVar, classGenerator, itemType, function.getBody());
+                generateIsArray(subtypeVar, classGenerator, functions, itemType, function.getBody());
             } else {
                 int expected = classGenerator.getClassPointer(type);
                 WasmExpression condition = new WasmIntBinary(WasmIntType.INT32, WasmIntBinaryOperation.EQ,
@@ -963,8 +965,8 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         body.add(new WasmReturn(new WasmInt32Constant(1)));
     }
 
-    private void generateIsArray(WasmLocal subtypeVar, WasmClassGenerator classGenerator, ValueType itemType,
-            List<WasmExpression> body) {
+    private void generateIsArray(WasmLocal subtypeVar, WasmClassGenerator classGenerator,
+            WasmFunctionRepository functions, ValueType itemType, List<WasmExpression> body) {
         int itemOffset = classGenerator.getFieldOffset(new FieldReference(RuntimeClass.class.getName(), "itemType"));
 
         var itemExpression = new WasmLoadInt32(4, new WasmGetLocal(subtypeVar), WasmInt32Subtype.INT32);
@@ -976,18 +978,18 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         itemTest.setType(WasmType.INT32);
         itemTest.getThenBlock().getBody().add(new WasmInt32Constant(0));
 
-        WasmCall delegateToItem = new WasmCall(classGenerator.names.forSupertypeFunction(itemType));
+        WasmCall delegateToItem = new WasmCall(functions.forSupertype(itemType));
         delegateToItem.getArguments().add(new WasmGetLocal(subtypeVar));
         itemTest.getElseBlock().getBody().add(delegateToItem);
 
         body.add(new WasmReturn(itemTest));
     }
 
-    private void generateStub(NameProvider names, WasmModule module, MethodHolder method, MethodHolder implementor) {
-        WasmFunction function = module.getFunctions().get(names.forMethod(method.getReference()));
+    private void generateStub(WasmFunctionRepository functions, MethodHolder method, MethodHolder implementor) {
+        WasmFunction function = functions.forMethod(method);
 
-        WasmCall call = new WasmCall(names.forMethod(implementor.getReference()));
-        for (WasmType param : function.getParameters()) {
+        WasmCall call = new WasmCall(functions.forMethod(implementor));
+        for (WasmType param : function.getType().getParameterTypes()) {
             WasmLocal local = new WasmLocal(param);
             function.add(local);
             call.getArguments().add(new WasmGetLocal(local));
@@ -1001,7 +1003,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
     }
 
     private void renderClinit(ListableClassReaderSource classes, WasmClassGenerator classGenerator,
-            WasmModule module) {
+            WasmFunctionRepository functions) {
         for (ValueType type : classGenerator.getRegisteredClasses()) {
             if (!(type instanceof ValueType.Object)) {
                 continue;
@@ -1020,8 +1022,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                 continue;
             }
 
-            WasmFunction initFunction = new WasmFunction(classGenerator.names.forClassInitializer(className));
-            module.add(initFunction);
+            var initFunction = functions.forClassInitializer(className);
 
             WasmBlock block = new WasmBlock(false);
 
@@ -1039,7 +1040,7 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             block.getBody().add(new WasmStoreInt32(4, new WasmInt32Constant(index), initFlag,
                     WasmInt32Subtype.INT32));
 
-            block.getBody().add(new WasmCall(classGenerator.names.forMethod(method.getReference())));
+            block.getBody().add(new WasmCall(functions.forMethod(method)));
 
             if (controller.wasCancelled()) {
                 break;
@@ -1121,17 +1122,18 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
         private BinaryWriter binaryWriter;
         private WasmStringPool stringPool;
         private Diagnostics diagnostics;
-        private NameProvider names;
+        private WasmFunctionRepository functions;
         private WasmClassGenerator classGenerator;
         private ClassReaderSource classSource;
 
         MethodGeneratorContextImpl(BinaryWriter binaryWriter, WasmStringPool stringPool,
-                Diagnostics diagnostics, NameProvider names, WasmClassGenerator classGenerator,
+                Diagnostics diagnostics, WasmFunctionRepository functions,
+                 WasmClassGenerator classGenerator,
                 ClassReaderSource classSource) {
             this.binaryWriter = binaryWriter;
             this.stringPool = stringPool;
             this.diagnostics = diagnostics;
-            this.names = names;
+            this.functions = functions;
             this.classGenerator = classGenerator;
             this.classSource = classSource;
         }
@@ -1151,9 +1153,10 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
             return diagnostics;
         }
 
+
         @Override
-        public NameProvider getNames() {
-            return names;
+        public WasmFunctionRepository getFunctions() {
+            return functions;
         }
 
         @Override
@@ -1189,8 +1192,8 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                 case "runMain": {
                     var entryPoint = new MethodReference(controller.getEntryPoint(),
                             "main", ValueType.parse(String[].class), ValueType.parse(void.class));
-                    String name = manager.getNames().forMethod(entryPoint);
-                    WasmCall call = new WasmCall(name);
+                    var function = manager.getFunctions().forStaticMethod(entryPoint);
+                    WasmCall call = new WasmCall(function);
                     var arg = manager.generate(invocation.getArguments().get(0));
                     if (manager.isManagedMethodCall(entryPoint)) {
                         var block = new WasmBlock(false);
@@ -1206,9 +1209,9 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
                     return call;
                 }
                 case "setCurrentThread": {
-                    String name = manager.getNames().forMethod(new MethodReference(Thread.class,
+                    var function = manager.getFunctions().forStaticMethod(new MethodReference(Thread.class,
                             "setCurrentThread", Thread.class, void.class));
-                    WasmCall call = new WasmCall(name);
+                    WasmCall call = new WasmCall(function);
                     call.getArguments().add(manager.generate(invocation.getArguments().get(0)));
                     call.setLocation(invocation.getLocation());
                     return call;
