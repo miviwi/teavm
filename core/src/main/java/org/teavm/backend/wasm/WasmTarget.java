@@ -131,7 +131,6 @@ import org.teavm.interop.Memory;
 import org.teavm.interop.Platforms;
 import org.teavm.interop.StaticInit;
 import org.teavm.model.AnnotationHolder;
-import org.teavm.model.BasicBlock;
 import org.teavm.model.CallLocation;
 import org.teavm.model.ClassHierarchy;
 import org.teavm.model.ClassHolder;
@@ -140,7 +139,6 @@ import org.teavm.model.ClassReader;
 import org.teavm.model.ClassReaderSource;
 import org.teavm.model.ElementModifier;
 import org.teavm.model.FieldReference;
-import org.teavm.model.Instruction;
 import org.teavm.model.ListableClassHolderSource;
 import org.teavm.model.ListableClassReaderSource;
 import org.teavm.model.MethodDescriptor;
@@ -153,9 +151,6 @@ import org.teavm.model.analysis.ClassMetadataRequirements;
 import org.teavm.model.classes.TagRegistry;
 import org.teavm.model.classes.VirtualTableBuilder;
 import org.teavm.model.classes.VirtualTableProvider;
-import org.teavm.model.instructions.CloneArrayInstruction;
-import org.teavm.model.instructions.InvocationType;
-import org.teavm.model.instructions.InvokeInstruction;
 import org.teavm.model.lowlevel.Characteristics;
 import org.teavm.model.lowlevel.ClassInitializerEliminator;
 import org.teavm.model.lowlevel.ClassInitializerTransformer;
@@ -1071,38 +1066,9 @@ public class WasmTarget implements TeaVMTarget, TeaVMWasmHost {
 
     private VirtualTableProvider createVirtualTableProvider(ListableClassHolderSource classes) {
         var builder = new VirtualTableBuilder(classes);
-        builder.setMethodsUsedAtCallSites(getMethodsUsedOnCallSites(classes));
+        builder.setMethodsUsedAtCallSites(VirtualTableBuilder.getMethodsUsedOnCallSites(classes));
         builder.setMethodCalledVirtually(controller::isVirtual);
         return builder.build();
-    }
-
-    private Set<MethodReference> getMethodsUsedOnCallSites(ListableClassHolderSource classes) {
-        var virtualMethods = new HashSet<MethodReference>();
-
-        for (String className : classes.getClassNames()) {
-            ClassHolder cls = classes.get(className);
-            for (MethodHolder method : cls.getMethods()) {
-                Program program = method.getProgram();
-                if (program == null) {
-                    continue;
-                }
-                for (int i = 0; i < program.basicBlockCount(); ++i) {
-                    BasicBlock block = program.basicBlockAt(i);
-                    for (Instruction insn : block) {
-                        if (insn instanceof InvokeInstruction) {
-                            InvokeInstruction invoke = (InvokeInstruction) insn;
-                            if (invoke.getType() == InvocationType.VIRTUAL) {
-                                virtualMethods.add(invoke.getMethod());
-                            }
-                        } else if (insn instanceof CloneArrayInstruction) {
-                            virtualMethods.add(new MethodReference(Object.class, "clone", Object.class));
-                        }
-                    }
-                }
-            }
-        }
-
-        return virtualMethods;
     }
 
     @Override

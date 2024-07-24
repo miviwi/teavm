@@ -19,6 +19,7 @@ import static org.teavm.interop.Memory.free;
 import static org.teavm.interop.Memory.malloc;
 import static org.teavm.interop.wasi.Wasi.printBuffer;
 import org.teavm.backend.c.intrinsic.RuntimeInclude;
+import org.teavm.backend.wasm.runtime.WasmGCSupport;
 import org.teavm.backend.wasm.runtime.WasmSupport;
 import org.teavm.classlib.PlatformDetector;
 import org.teavm.interop.Address;
