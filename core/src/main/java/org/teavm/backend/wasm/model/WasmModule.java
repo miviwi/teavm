@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.teavm.common.Graph;
 import org.teavm.common.GraphUtils;
 
 public class WasmModule {
@@ -117,5 +118,33 @@ public class WasmModule {
 
     public void setCustomSections(List<CustomSectionHolder> customSections) {
         this.customSections = customSections;
+    }
+
+    private static class TypeSorting {
+        WasmCollection<WasmCompositeType> original;
+        Graph graph;
+        boolean[] visited;
+        int[] sccMap;
+        int[][] sccsByIndex;
+        List<WasmCompositeType> sorted = new ArrayList<>();
+
+        void visit(int typeIndex) {
+            typeIndex = sccMap[typeIndex];
+            if (visited[typeIndex]) {
+                return;
+            }
+            visited[typeIndex] = true;
+            for (var outgoing : graph.outgoingEdges(typeIndex)) {
+                visit(outgoing);
+            }
+            var scc = sccsByIndex[typeIndex];
+            if (scc == null) {
+                sorted.add(original.get(typeIndex));
+            } else {
+                for (var index : scc) {
+                    sorted.add(original.get(index));
+                }
+            }
+        }
     }
 }
